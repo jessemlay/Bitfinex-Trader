@@ -1,0 +1,20 @@
+{
+  "name": "bitfinex-trader",
+  "version": "1.0.0",
+  "description": "trade cryptos",
+  "main": "app.js",
+  "dependencies": {
+    "bitfinex-api-node": "^1.0.2",
+    "express": "^4.15.3",
+    "node-linq": "0.0.5",
+    "socket.io": "^2.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^4.1.1"
+  },
+  "scripts": {
+    "start": "node app.js"
+  },
+  "author": "Jesse",
+  "license": "ISC"
+}
