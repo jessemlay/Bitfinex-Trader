@@ -458,22 +458,7 @@
         socket.on(localStorage.getItem('ticker'), function (msg) {
             console.log(msg);
             ticker.loadData(msg);
-        });
-
-        socket.on(localStorage.getItem('ticker') + '-trade', function (msg) {
-            console.log(msg);
-            trades.pair = msg.pair;
-            trades.trade.push(msg.trade);
-            $.each(msg.trade, function (key, value) {
-                $('#tblTrades > tbody:last-child').append('<tr><td>' + moment(value.MTS).locale(
-                        'en').format(
-                        'hh:mm:ss A') + '</td><td>' +
-                    value.PRICE +
-                    '</td><td>' +
-                    value.AMOUNT + '</td></tr>');
-            });
-
-        });
+        });   
 
         demo.initChartist();
 
@@ -563,16 +548,41 @@
         this.updatePair = function (data) {
             self.Pair = data;
         }
-        this.sendTicker = function () {
+        this.sendTicker = function () {            
             if (self.Pair === '') {
                 alert('Enter a crypto ticker');
             } else {
-                socket.removeAllListeners(localStorage.getItem('ticker'));
+                socket.removeAllListeners(self.Pair);
                 socket.on(self.Pair, function (msg) {
                     console.log(msg);
                     self.loadData(msg);
-                });
-                socket.emit('subscribe', self.Pair);
+                });             
+        socket.on(self.Pair+ '-trade', function (msg) {                                     
+            trades.pair = msg.pair;
+            trades.trade.push(msg.trade);
+            if(msg.trade.AMOUNT < 0) {
+                $('#tblTrades > tbody:first-child').after('<tr style="color:red"><td>' + moment(msg.trade.MTS).locale(
+                'en').format(
+                'hh:mm:ss A') + '</td><td>' +
+                msg.trade.PRICE +
+                '</td><td>' +
+                msg.trade.AMOUNT + '</td></tr>');   
+            } else {
+                $('#tblTrades > tbody:first-child').after('<tr style="color:green"><td>' + moment(msg.trade.MTS).locale(
+                'en').format(
+                'hh:mm:ss A') + '</td><td>' +
+                msg.trade.PRICE +
+                '</td><td>' +
+                msg.trade.AMOUNT + '</td></tr>'); 
+            }
+            debugger;
+            var table = document.getElementById('tblTrades');
+            var rowCount = table.rows.length;
+            if(rowCount >= 20){
+                table.deleteRow(rowCount -1);
+            }
+
+        });
                 localStorage.setItem('ticker', self.Pair);
 
             }
@@ -590,7 +600,7 @@
             self.LastPrice(data.ticker.LAST_PRICE);
             self.Low(data.ticker.LOW);
             self.LastUpdate('Last updated: ' + moment(new Date()).format('hh:mm:ss'));
-            self.Volume(parseInt(data.ticker.VOLUME).toLocaleString(undefined, {
+            self.Volume(parseInt(data.ticker.VOLUME).toLocaleString(undefined, { 
                 minimumFractionDigits: 0
             }));
             self.updatePair(data.pair);

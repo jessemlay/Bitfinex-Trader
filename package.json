@@ -6,7 +6,9 @@
   "dependencies": {
     "bitfinex-api-node": "^1.0.2",
     "express": "^4.15.3",
+    "moment": "^2.18.1",
     "node-linq": "0.0.5",
+    "redis": "^2.7.1",
     "socket.io": "^2.0.3"
   },
   "devDependencies": {

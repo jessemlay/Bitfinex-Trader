@@ -6,6 +6,7 @@ const io = require('socket.io').listen(server);
 const path = require('path');
 const BFX = require('bitfinex-api-node')
 const redis = require('redis');
+const moment = require('moment');
 const client = redis.createClient();
 server.listen(80);
 
@@ -13,16 +14,17 @@ function getFormattedDate() {
     var date = new Date();
     var hours = date.getHours();
     var minutes = date.getMinutes();
+    var seconds = date.getSeconds();
     var ampm = hours >= 12 ? 'pm' : 'am';
     hours = hours % 12;
     hours = hours ? hours : 12; // the hour '0' should be '12'
     minutes = minutes < 10 ? '0' + minutes : minutes;
-    var strTime = hours + ':' + minutes + ' ' + ampm;
+    var strTime = hours + ':' + minutes + ':' + seconds;
     return date.getMonth() + 1 + "/" + date.getDate() + "/" + date.getFullYear() + " " + strTime;
 }
 
-const API_KEY = ''
-const API_SECRET = ''
+const API_KEY = 'qFcZYZhhSrhTx7IDwHk36Rq7o6uAHZ2J15LOlAABv0u'
+const API_SECRET = 'qFcZYZhhSrhTx7IDwHk36Rq7o6uAHZ2J15LOlAABv0u'
 
 const opts = {
     version: 2,
@@ -31,6 +33,39 @@ const opts = {
 
 const bws = new BFX(API_KEY, API_SECRET, opts).ws
 var bwsOpen = false;
+var availablePairs = ['tBTCUSD',
+        'tETHUSD',
+        'tETHBTC',
+        'tLTCUSD',
+        'tLTCBTC',
+        'tEOSUSD',
+        'tEOSBTC',
+        'tEOSETH',
+        'tIOTUSD',
+        'tIOTBTC',
+        'tIOTETH',
+        'tETCUSD',
+        'tETCBTC',
+        'tZECUSD',
+        'tZECBTC',
+        'tDSHUSD',
+        'tDSHBTC',
+        'tXRPUSD',
+        'tXRPBTC',
+        'tXMRUSD',
+        'tXMRBTC',
+        'tBCCUSD',
+        'tBCCBTC',
+        'tRRTUSD',
+        'tRRTBTC',
+        'tBCUUSD',
+        'tBCUBTC',
+        'tSANUSD',
+        'tSANBTC',
+        'tSANETH',
+        'tOMGUSD',
+        'tOMGBTC',
+        'tOMGETH'];
 var currentChannel;
 var subscribedChannels = [{
     channel: '',
@@ -41,12 +76,15 @@ var subscribedChannels = [{
 bws.on('open', () => {
     bwsOpen = true;
     console.log('Bitfinex socket connected')
-    /*  bws.subscribeOrderBook('BTCUSD')
-      bws.subscribeTrades('BTCUSD')*/
+    availablePairs.forEach(function(pair) {
+    bws.subscribeTicker(pair)
+    bws.subscribeOrderBook(pair)
+    bws.subscribeTrades(pair)
+    });
 })
 
 bws.on('subscribed', function (sub) {
-    console.log(sub)
+    console.log('Subscribed to: ' + sub.symbol)
     subscribedChannels.push({
         channel: sub.channel,
         symbol: sub.symbol,
@@ -61,31 +99,13 @@ io.on('connection', function (socket) {
         console.log('Client message received:' + msg);
 
         console.log(msg);
-        currentChannel = msg;
-        var tickerFound = false;
-        var tradeFound = false;
-        subscribedChannels.forEach(function (item) {
-            if (item.symbol === ('t' + msg) && item.channel == 'trades') {
-                bws.unsubscribe(item.chanId);
-                bws.subscribeTicker(msg);
-            } else {
-                bws.subscribeTrades(msg)
-            }
-            if (item.symbol === ('t' + msg) && item.channel == 'ticker') {
-                bws.unsubscribe(item.chanId);
-                bws.subscribeTicker(msg);
-            } else {
-                bws.subscribeTicker(msg);
-            }
-            return;
-        });
-        subscribedChannels = [];
+        currentChannel = msg;                
     });
 
     bws.on('ticker', (pair, ticker) => {
         var now = new Date;
         console.log('Ticker received:' + pair);
-        //client.set(pair + '-' + getFormattedDate(), JSON.stringify(ticker), redis.print);
+        client.zadd(pair + '-' + 'ticker-' + moment(new Date()).format('MM/DD/YYYY hh:mm:ss'), 1,JSON.stringify(ticker));
         socket.emit(pair.replace('t', ''), {
             pair: pair.replace('t', ''),
             ticker: ticker
@@ -94,10 +114,19 @@ io.on('connection', function (socket) {
     bws.on('trade', (pair, trade) => {
         var now = new Date;
         console.log('Trade received:' + pair);
-        //client.set(pair + '-' + getFormattedDate(), JSON.stringify(ticker), redis.print);
+        client.zadd(pair + '-' + 'trade-' + moment(new Date()).format('MM/DD/YYYY hh:mm:ss'), 1,JSON.stringify(trade));
         socket.emit(pair.replace('t', '') + '-trade', {
             pair: pair.replace('t', ''),
             trade: trade
+        });
+    });
+      bws.on('orderbook', (pair, book) => {
+        var now = new Date;
+        console.log('Trade received:' + pair);
+        client.zadd(pair + '-' + 'book-' + moment(new Date()).format('MM/DD/YYYY hh:mm:ss'), 1,JSON.stringify(book));
+        socket.emit(pair.replace('t', '') + '-trade', {
+            pair: pair.replace('t', ''),
+            trade: book
         });
     });
 
