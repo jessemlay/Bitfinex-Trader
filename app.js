@@ -23,8 +23,8 @@ function getFormattedDate() {
     return date.getMonth() + 1 + "/" + date.getDate() + "/" + date.getFullYear() + " " + strTime;
 }
 
-const API_KEY = 'qFcZYZhhSrhTx7IDwHk36Rq7o6uAHZ2J15LOlAABv0u'
-const API_SECRET = 'qFcZYZhhSrhTx7IDwHk36Rq7o6uAHZ2J15LOlAABv0u'
+const API_KEY = ''
+const API_SECRET = ''
 
 const opts = {
     version: 2,
